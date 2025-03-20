@@ -24,10 +24,8 @@ class CommentViewSet(ModelViewSet):
         return review.comments.all()
 
     def perform_create(self, serializer):
-        """
-        Создает комментарий для конкретного отзыва.
-        """
         review = get_object_or_404(Review, id=self.kwargs.get('review_id'))
+        print(f"🔍 Перед сохранением: {serializer.validated_data}")  # 👈 Отладка
         serializer.save(author=self.request.user, review=review)
 
 

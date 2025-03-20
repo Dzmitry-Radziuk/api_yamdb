@@ -8,7 +8,7 @@ class CommentSerializer(serializers.ModelSerializer):
     """
     Сериализатор для модели Comment.
     """
-    text = serializers.SerializerMethodField()
+    text = serializers.CharField(required=True, allow_blank=False)
     author = serializers.SlugRelatedField(
         slug_field='username',
         read_only=True
