@@ -13,7 +13,7 @@ from titles.permissions import AdminOrReadOnly
 
 class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
-    permission_classes = (AdminOrReadOnly,)
+    permission_classes = [AdminOrReadOnly]
     lookup_field = 'slug'
 
     def get_queryset(self):
@@ -33,7 +33,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 class GenreViewSet(viewsets.ModelViewSet):
     serializer_class = GenreSerializer
-    permission_classes = (AdminOrReadOnly,)
+    permission_classes = [AdminOrReadOnly]
     lookup_field = 'slug'
 
     def get_queryset(self):
@@ -52,7 +52,7 @@ class GenreViewSet(viewsets.ModelViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    permission_classes = (AdminOrReadOnly,)
+    permission_classes = [AdminOrReadOnly]
 
     def get_queryset(self):
         return Title.objects.all().order_by('name')
