@@ -1,26 +1,49 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-class CustomUser(AbstractUser):
-    ROLE_CHOICES = [
-        ('user', 'User'),
-        ('moderator', 'Moderator'),
-        ('admin', 'Admin'),
-    ]
+from users.constants import (ADMIN, MAX_LENGTH_STR, MODERATOR, ROLE_CHOICES,
+                             USER)
+
+
+class User(AbstractUser):
+    """Кастомная модель пользователя."""
+
+    email = models.EmailField(
+        unique=True,
+        max_length=254,
+        verbose_name='Email'
+    )
+    bio = models.TextField(
+        blank=True,
+        verbose_name='Биография'
+    )
     role = models.CharField(
-        max_length=10, 
-        choices=ROLE_CHOICES, 
-        default='user'
+        max_length=10,
+        choices=ROLE_CHOICES,
+        default=USER,
+        verbose_name='Роль'
     )
     confirmation_code = models.CharField(
-        max_length=10, 
-        blank=True, 
+        max_length=10,
+        blank=True,
         null=True
     )
 
     class Meta:
+        ordering = ['username']
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 
     def __str__(self):
-        return self.username
+        return self.username[:MAX_LENGTH_STR] + (
+            "..." if len(self.username) > MAX_LENGTH_STR else ""
+        )
+
+    def is_admin(self):
+        return self.role == ADMIN or self.is_superuser or self.is_staff
+
+    def is_moderator(self):
+        return self.role == MODERATOR
+
+    def is_user(self):
+        return self.role == USER

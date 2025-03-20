@@ -1,18 +1,31 @@
+import os
+from datetime import timedelta
 from pathlib import Path
 
+from django.core.management.utils import get_random_secret_key
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+DEFAULT_FROM_EMAIL = 'no-reply@yamdb.com'
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'p&l%385148kslhtyn^##a1)ilz@4zqj=rq&agdol^##zgl9(vs'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', get_random_secret_key())  
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-AUTH_USER_MODEL = 'users.CustomUser'
-# Application definition
+AUTH_USER_MODEL = 'users.User'
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+EMAIL_FILE_PATH = BASE_DIR / 'emails'
+
+
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -21,10 +34,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'drf_yasg',
     'rest_framework',
-    'titles',
+    'rest_framework_simplejwt',
+    'drf_yasg',
     'users',
+    'titles',
     'reviews',
     'api',
 ]
@@ -60,7 +74,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'api_yamdb.wsgi.application'
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
 
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60), 
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),  
+    'ROTATE_REFRESH_TOKENS': False,
+}
 # Database
 
 DATABASES = {
@@ -89,11 +116,13 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+
+
 # Internationalization
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ru'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 
