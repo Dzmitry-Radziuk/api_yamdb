@@ -76,6 +76,7 @@ class Review(models.Model):
     class Meta:
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
+        ordering = ['-pub_date']
         constraints = [
             models.UniqueConstraint(
                 fields=['author', 'title'],
@@ -86,11 +87,6 @@ class Review(models.Model):
     def __str__(self):
         return f'{self.author.username} - {self.title.name}'
 
-    # def clean(self):
-    #     if self.score < 1 or self.score > 10:
-    #         raise ValidationError({'score': 'Оценка должна быть от 1 до 10.'})
-    #     if Review.objects.filter(author=self.author, title=self.title).exists():
-    #         raise ValidationError({'author': 'Вы уже оставляли отзыв на это произведение.'})
 
     def save(self, *args, **kwargs):
         """
