@@ -1,7 +1,7 @@
 from rest_framework import permissions
 
 
-class AdminOrReadOnly(permissions.BasePermissions):
+class AdminOrReadOnly(permissions.BasePermission):
     """
     Разрешает доступ всем для операций чтения (GET),
     и только администраторам для записи (POST, PATCH, DELETE).
