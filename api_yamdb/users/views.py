@@ -17,21 +17,22 @@ from users.utils import (check_required_fields, generate_confirmation_code,
 
 
 class SignupViewSet(viewsets.ViewSet):
-    """Регистрации пользователя."""
-
+    """Регистрация пользователя."""
     permission_classes = [AllowAny]
 
     def create(self, request):
         """
-        Обрабатывает регистрацию: создает пользователя или
-        обновляет confirmation_code.
+        Обрабатывает регистрацию: если пользователь существует,
+        обновляет confirmation_code,
+        иначе — создает нового пользователя с подготовленными данными.
         """
         errors = check_required_fields(request.data, ['username', 'email'])
         if errors:
             return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
-        username = request.data.get('username')
-        email = request.data.get('email')
+        data = prepare_user_creation_data(request.data, USER)
+        username = data.get('username')
+        email = data.get('email')
         user = User.objects.filter(username=username, email=email).first()
         new_code = generate_confirmation_code()
 
@@ -39,13 +40,9 @@ class SignupViewSet(viewsets.ViewSet):
             user.confirmation_code = new_code
             user.save()
         else:
-            serializer = SignupSerializer(data=request.data)
+            serializer = SignupSerializer(data=data)
             serializer.is_valid(raise_exception=True)
-            user = User.objects.create(
-                username=username,
-                email=email,
-                confirmation_code=new_code
-            )
+            user = serializer.save(confirmation_code=new_code)
 
         send_confirmation_email(user.email, new_code)
         return Response(
@@ -65,12 +62,11 @@ class TokenViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         user = User.objects.filter(
             username=serializer.validated_data['username']).first()
-        if (
-            not user
-            or user.confirmation_code
-            != serializer.validated_data['confirmation_code']
-        ):
-            raise UserNotFound() if not user else InvalidConfirmationCode()
+        if not user:
+            raise UserNotFound()
+        confirmation_code = serializer.validated_data['confirmation_code']
+        if user.confirmation_code != confirmation_code:
+            raise InvalidConfirmationCode()
         return Response(
             {'token': str(AccessToken.for_user(user))},
             status=status.HTTP_200_OK
