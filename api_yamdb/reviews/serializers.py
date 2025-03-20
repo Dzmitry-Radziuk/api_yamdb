@@ -28,7 +28,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     """
     Сериализатор для модели Review.
     """
-    text = serializers.SerializerMethodField()
+    text = serializers.CharField(required=True, allow_blank=False)
     author = serializers.SlugRelatedField(
         default=serializers.CurrentUserDefault(),
         slug_field='username',

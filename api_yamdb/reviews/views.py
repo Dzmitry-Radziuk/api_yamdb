@@ -25,7 +25,6 @@ class CommentViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         review = get_object_or_404(Review, id=self.kwargs.get('review_id'))
-        print(f"🔍 Перед сохранением: {serializer.validated_data}")  # 👈 Отладка
         serializer.save(author=self.request.user, review=review)
 
 
@@ -38,6 +37,7 @@ class ReviewViewSet(ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrModeratorOrAdmin]
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_queryset(self):
         """
