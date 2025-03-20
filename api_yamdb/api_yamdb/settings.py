@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 DEFAULT_FROM_EMAIL = 'no-reply@yamdb.com'
@@ -131,13 +133,8 @@ USE_L10N = True
 USE_TZ = True
 
 
-REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
-    ],
-}
+# Static files (CSS, JavaScript, Images)
 
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

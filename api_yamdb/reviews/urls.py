@@ -1,7 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from reviews.views import ReviewViewSet, TitleViewSet, CommentViewSet
-
+from titles.views import TitleViewSet
 router = DefaultRouter()
 router.register('title', TitleViewSet)
 router.register(

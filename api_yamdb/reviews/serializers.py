@@ -1,4 +1,4 @@
-from api import serializers
+from rest_framework import serializers 
 from reviews.models import Review
 
 from .models import Comment

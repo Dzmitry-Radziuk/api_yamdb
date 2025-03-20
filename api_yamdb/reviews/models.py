@@ -1,21 +1,12 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 
 from django.db import models
-from django.contrib.auth import get_user_model
+from users.models import User
+from titles.models import Title
 
-User = get_user_model()
+User = User
 
 
-class Title(models.Model):
-    pass
-
-    def update_rating(self):
-        reviews = self.reviews.all()
-        if reviews.exists():
-            self.rating = sum(review.score for review in reviews) / reviews.count()
-        else:
-            self.rating = None
-        self.save()
 
 
 class Comment(models.Model):

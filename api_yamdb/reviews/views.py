@@ -8,9 +8,6 @@ from reviews.permissions import IsAuthorOrModeratorOrAdmin
 from reviews.serializers import ReviewSerializer, CommentSerializer
 
 
-class TitleViewSet(ModelViewSet):
-    pass
-
 class CommentViewSet(ModelViewSet):
     """
     Вьюсет для работы с комментариями.
