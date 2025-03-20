@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Avg
 
 from titles.constants import (
     MAX_LENGTH_NAME,
@@ -21,9 +22,10 @@ class Category(models.Model):
     class Meta:
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
+    
 
     def __str__(self):
-        return self.name[:MAX_STR_LENGTH]
+        return self.name[:MAX_STR_LENGTH]    
 
 
 class Genre(models.Model):
@@ -70,9 +72,22 @@ class Title(models.Model):
         verbose_name='Жанр'
     )
 
+    rating = models.FloatField(
+        null=True, blank=True,
+        verbose_name='Рейтинг' 
+    )
+
     class Meta:
         verbose_name = 'Произведение'
         verbose_name_plural = 'Произведения'
 
+    def update_rating(self):
+        """Обновляет средний рейтинг произведения."""
+        avg_rating = self.reviews.aggregate(Avg('score'))['score__avg']
+        self.rating = avg_rating if avg_rating is not None else 0
+        self.save(update_fields=['rating'])
+
     def __str__(self):
         return self.name[:MAX_STR_LENGTH]
+    
+    

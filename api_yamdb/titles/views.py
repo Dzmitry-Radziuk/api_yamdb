@@ -53,9 +53,7 @@ class GenreViewSet(viewsets.ModelViewSet):
 
 class TitleViewSet(viewsets.ModelViewSet):
     permission_classes = [AdminOrReadOnly]
-
-    def get_queryset(self):
-        return Title.objects.all().order_by('name')
+    queryset = Title.objects.all().order_by('name')
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):

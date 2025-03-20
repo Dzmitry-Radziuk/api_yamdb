@@ -13,7 +13,8 @@ class CommentViewSet(ModelViewSet):
     Вьюсет для работы с комментариями.
     """
     serializer_class = CommentSerializer
-    permission_classes = (IsAuthenticatedOrReadOnly, IsAuthorOrModeratorOrAdmin)
+    permission_classes = [IsAuthorOrModeratorOrAdmin]
+    http_method_names = ['get', 'post', 'patch', 'delete']  # PUT не разрешён
 
     def get_queryset(self):
         """
@@ -30,26 +31,6 @@ class CommentViewSet(ModelViewSet):
         serializer.save(author=self.request.user, review=review)
 
 
-class CommentViewSet(ModelViewSet):
-    """
-    Вьюсет для работы с комментариями.
-    """
-    serializer_class = CommentSerializer
-    permission_classes = (IsAuthenticatedOrReadOnly, IsAuthorOrModeratorOrAdmin)
-
-    def get_queryset(self):
-        """
-        Возвращает комментарии для конкретного отзыва.
-        """
-        review = get_object_or_404(Review, id=self.kwargs.get('review_id'))
-        return review.comments.all()
-
-    def perform_create(self, serializer):
-        """
-        Создает комментарий для конкретного отзыва.
-        """
-        review = get_object_or_404(Review, id=self.kwargs.get('review_id'))
-        serializer.save(author=self.request.user, review=review)
 
 
 class ReviewViewSet(ModelViewSet):
