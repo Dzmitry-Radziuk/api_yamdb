@@ -1,11 +1,9 @@
-from rest_framework import status, permissions
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
 from rest_framework.generics import get_object_or_404
+from rest_framework.viewsets import ModelViewSet
+
 from reviews.models import Review, Title
 from reviews.permissions import IsAuthorOrModeratorOrAdmin
-from reviews.serializers import ReviewSerializer, CommentSerializer
+from reviews.serializers import CommentSerializer, ReviewSerializer
 
 
 class CommentViewSet(ModelViewSet):
@@ -36,7 +34,7 @@ class ReviewViewSet(ModelViewSet):
     """
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrModeratorOrAdmin]
+    permission_classes = [IsAuthorOrModeratorOrAdmin]
     http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_queryset(self):

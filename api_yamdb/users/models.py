@@ -1,12 +1,14 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from users.validators import username_validator
+
 from users.constants import (ADMIN, MAX_LENGTH_STR, MODERATOR, ROLE_CHOICES,
                              USER)
+from users.validators import username_validator
 
 
 class User(AbstractUser):
     """Кастомная модель пользователя."""
+    
     username = models.CharField(
         max_length=150,
         unique=True,
