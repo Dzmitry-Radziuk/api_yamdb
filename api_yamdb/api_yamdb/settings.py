@@ -7,8 +7,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 DEFAULT_FROM_EMAIL = 'no-reply@yamdb.com'
@@ -38,7 +36,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
-    'django_filters',
     'drf_yasg',
     'users',
     'titles',
@@ -84,8 +81,6 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10 
 }
 
 SIMPLE_JWT = {
