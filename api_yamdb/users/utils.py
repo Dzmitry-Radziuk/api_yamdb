@@ -16,7 +16,7 @@ def generate_confirmation_code(length=6):
 
 def send_confirmation_email(email, confirmation_code):
     """Отправляет email с кодом подтверждения (с логом)."""
-    print(f"📧 Sending confirmation email to {email}: {confirmation_code}")
+    print(f'📧 Sending confirmation email to {email}: {confirmation_code}')
     send_mail(
         'Код подтверждения',
         f'Ваш код подтверждения: {confirmation_code}',
@@ -41,7 +41,7 @@ def check_required_fields(data, fields):
     errors = {}
     for field in fields:
         if not data.get(field):
-            errors[field] = ["Это поле обязательно."]
+            errors[field] = ['Это поле обязательно.']
     return errors
 
 
@@ -57,7 +57,7 @@ def prepare_user_creation_data(data, default_role):
     role = data.get("role", default_role)
     if "role" in data:
         validate_role(role)
-    data["role"] = role
-    data["password"] = make_password(None)
-    data.setdefault("confirmation_code", generate_confirmation_code())
+    data['role'] = role
+    data['password'] = make_password(None)
+    data.setdefault('confirmation_code', generate_confirmation_code())
     return data
