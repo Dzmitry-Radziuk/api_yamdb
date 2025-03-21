@@ -1,4 +1,7 @@
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework.permissions import SAFE_METHODS, BasePermission
+
+from reviews.constants import USER_ROLES_ALLOWED_TO_EDIT
+
 
 class IsAuthorOrModeratorOrAdmin(BasePermission):
     """
@@ -19,7 +22,8 @@ class IsAuthorOrModeratorOrAdmin(BasePermission):
 
         return (
             request.user.is_authenticated and (
-                request.user == obj.author or
-                getattr(request.user, "role", None) in ["moderator", "admin"]
+                request.user == obj.author
+                or getattr(request.user, "role", None)
+                in USER_ROLES_ALLOWED_TO_EDIT
             )
         )

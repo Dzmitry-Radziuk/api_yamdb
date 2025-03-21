@@ -1,18 +1,15 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
-
 from django.db import models
-from users.models import User
+
+from reviews.constants import (MAX_REVIEW_SCORE, MAX_REVIEW_SCORE_MSG,
+                               MIN_REVIEW_SCORE, MIN_REVIEW_SCORE_MSG)
 from titles.models import Title
-
-User = User
-
-
+from users.models import User
 
 
 class Comment(models.Model):
-    """
-    Модель для хранения комментариев к отзывам.
-    """
+    """Модель для хранения комментариев к отзывам."""
+
     text = models.TextField(
         verbose_name='Текст комментария'
     )
@@ -44,16 +41,15 @@ class Comment(models.Model):
 
 
 class Review(models.Model):
-    """
-    Модель для хранения отзывов на произведения.
-    """
+    """Модель для хранения отзывов на произведения."""
+
     text = models.TextField(verbose_name='Текст отзыва')
     score = models.IntegerField(
         verbose_name='Оценка',
         validators=[
-            MinValueValidator(1, 'Минимальная оценка'),
-            MaxValueValidator(10, 'Максимальная оценка')
-        ],
+            MinValueValidator(MIN_REVIEW_SCORE, MIN_REVIEW_SCORE_MSG),
+            MaxValueValidator(MAX_REVIEW_SCORE, MAX_REVIEW_SCORE_MSG),
+        ]
     )
     author = models.ForeignKey(
         User,
@@ -87,19 +83,13 @@ class Review(models.Model):
     def __str__(self):
         return f'{self.author.username} - {self.title.name}'
 
-
     def save(self, *args, **kwargs):
-        """
-        Переопределение метода save для обновления рейтинга произведения.
-        """
-        # self.full_clean()
+        """Переопределение метода save для обновления рейтинга."""
         super().save(*args, **kwargs)
         self.title.update_rating()
 
     def delete(self, *args, **kwargs):
-        """
-        Переопределение метода delete для обновления рейтинга произведения.
-        """
+        """Переопределение метода delete для обновления рейтинга."""
         title = self.title
         super().delete(*args, **kwargs)
         title.update_rating()

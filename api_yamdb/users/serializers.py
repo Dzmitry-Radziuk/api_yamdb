@@ -6,6 +6,7 @@ from users.models import User
 
 class UserSerializer(serializers.ModelSerializer):
     """Сериализатор для модели User."""
+
     class Meta:
         model = User
         fields = [
@@ -20,6 +21,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class SignupSerializer(serializers.ModelSerializer):
     """Сериализатор для регистрации пользователя."""
+
     class Meta:
         model = User
         fields = ['username', 'email']
@@ -45,11 +47,12 @@ class SignupSerializer(serializers.ModelSerializer):
                     "Пользователь с таким email уже существует.")
         if username.lower() == "me":
             raise ValidationError(
-                'Использование "me" в качестве username запрещено.')
+                "Использование \"me\" в качестве username запрещено.")
         return data
 
 
 class TokenSerializer(serializers.Serializer):
     """Сериализатор для получения JWT-токена."""
+
     username = serializers.CharField(required=True)
     confirmation_code = serializers.CharField(required=True)
