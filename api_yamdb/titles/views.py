@@ -19,11 +19,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     lookup_field = 'slug'
     filter_backends = [SearchFilter]
     search_fields = ['name']
-    http_method_names = [
-        'get',
-        'post',
-        'delete'
-    ]
+    http_method_names = ['get', 'post', 'delete']
 
     def get_queryset(self):
         return Category.objects.order_by('name')
@@ -40,11 +36,7 @@ class GenreViewSet(viewsets.ModelViewSet):
     lookup_field = 'slug'
     filter_backends = [SearchFilter]
     search_fields = ['name']
-    http_method_names = [
-        'get',
-        'post',
-        'delete'
-    ]
+    http_method_names = ['get', 'post', 'delete']
 
     def get_queryset(self):
         return Genre.objects.order_by('name')
@@ -56,7 +48,8 @@ class GenreViewSet(viewsets.ModelViewSet):
 class TitleViewSet(viewsets.ModelViewSet):
     """CRUD для произведений. Чтение доступно всем, управление — админам."""
 
-    queryset = Title.objects.all()
+    queryset = Title.objects.select_related(
+        'category').prefetch_related('genre')
     filter_backends = [DjangoFilterBackend]
     filterset_class = TitleFilter
     http_method_names = [

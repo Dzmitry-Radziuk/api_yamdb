@@ -28,12 +28,7 @@ class TitleFilter(FilterSet):
 
     class Meta:
         model = Title
-        fields = [
-            'category',
-            'genre',
-            'name',
-            'year'
-        ]
+        fields = ['category', 'genre', 'name', 'year']
 
 
 def validate_year(year):

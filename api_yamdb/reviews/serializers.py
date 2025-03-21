@@ -1,15 +1,19 @@
 from rest_framework import serializers
 
-from reviews.models import Review
-
-from .models import Comment
+from reviews.models import Comment, Review
+from reviews.utils import summarize_text
+from reviews.validators import (validate_score, validate_text,
+                                validate_unique_review)
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для модели Comment.
-    """
-    text = serializers.CharField(required=True, allow_blank=False)
+    """Сериализатор для комментариев."""
+
+    text = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        validators=[validate_text]
+    )
     author = serializers.SlugRelatedField(
         slug_field='username',
         read_only=True
@@ -17,49 +21,33 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ('id', 'text', 'author', 'pub_date')
-        read_only_fields = ('id', 'pub_date')
+        fields = ['id', 'text', 'author', 'pub_date']
+        read_only_fields = ['id', 'pub_date']
 
     def get_text(self, obj):
-        words = obj.text.split()[:3]
-        return ' '.join(words) + '...' if len(obj.text.split()) > 3 else obj.text
+        return summarize_text(obj.text)
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для модели Review.
-    """
-    text = serializers.CharField(required=True, allow_blank=False)
+    """Сериализатор для отзывов."""
+
+    text = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        validators=[validate_text]
+    )
     author = serializers.SlugRelatedField(
         default=serializers.CurrentUserDefault(),
         slug_field='username',
         read_only=True
     )
+    score = serializers.IntegerField(
+        validators=validate_score()
+    )
 
     class Meta:
         model = Review
-        fields = ('id', 'text', 'score', 'author', 'pub_date')
-
-    def get_text(self, obj):
-        words = obj.text.split()[:3]
-        return ' '.join(words) + '...' if len(obj.text.split()) > 3 else obj.text
+        fields = ['id', 'text', 'score', 'author', 'pub_date']
 
     def validate(self, data):
-        """
-        Валидация для проверки, что пользователь
-        оставляет только один отзыв на произведение.
-        """
-        request = self.context.get('request')
-        if request.method == 'POST':  # Проверяем только при создании отзыва
-            title_id = self.context['view'].kwargs.get('title_id')
-            if Review.objects.filter(author=request.user, title_id=title_id).exists():
-                raise serializers.ValidationError('Вы уже оставляли отзыв на это произведение.')
-        return data
-
-    def validate_score(self, value):
-        """
-        Валидация для оценки (должна быть от 1 до 10).
-        """
-        if value < 1 or value > 10:
-            raise serializers.ValidationError('Оценка должна быть от 1 до 10.')
-        return value
+        return validate_unique_review(data, self.context)
