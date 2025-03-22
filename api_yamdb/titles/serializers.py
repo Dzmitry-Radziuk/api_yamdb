@@ -1,6 +1,10 @@
 from rest_framework import serializers
 from titles.models import Category, Genre, Title
-from titles.validators import validate_slug, validate_year
+from titles.validators import (
+    validate_slug,
+    validate_year,
+    validate_unique_slug
+)
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -8,10 +12,8 @@ class CategorySerializer(serializers.ModelSerializer):
     slug = serializers.CharField(validators=[validate_slug])
 
     def validate(self, data):
-        """Проверяет уникальность slug."""
-        if self.instance is None and Category.objects.filter(slug=data['slug']).exists():
-            raise serializers.ValidationError({'slug': 'Категория с таким slug уже существует.'})
-        return data
+        """Проверяет уникальность slug через валидатор."""
+        return validate_unique_slug(data, Category, self.instance)
 
     class Meta:
         model = Category
@@ -23,10 +25,8 @@ class GenreSerializer(serializers.ModelSerializer):
     slug = serializers.CharField(validators=[validate_slug])
 
     def validate(self, data):
-        """Проверяет уникальность slug."""
-        if self.instance is None and Genre.objects.filter(slug=data['slug']).exists():
-            raise serializers.ValidationError({'slug': 'Жанр с таким slug уже существует.'})
-        return data
+        """Проверяет уникальность slug через валидатор."""
+        return validate_unique_slug(data, Genre, self.instance)
 
     class Meta:
         model = Genre

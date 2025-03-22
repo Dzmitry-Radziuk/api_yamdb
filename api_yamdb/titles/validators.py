@@ -24,3 +24,13 @@ def validate_year(value):
             'Год выпуска не может быть больше текущего года.'
         )
     return value
+
+
+def validate_unique_slug(data, model, instance=None):
+    """Проверяет уникальность slug для заданной модели."""
+    slug = data.get('slug')
+    if instance is None and model.objects.filter(slug=slug).exists():
+        raise serializers.ValidationError(
+            {'slug': f'{model.__name__} с таким slug уже существует.'}
+        )
+    return data
