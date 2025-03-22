@@ -1,49 +1,45 @@
 from django.db import models
-from django.db.models import Avg
+from django.core.validators import MaxValueValidator
 
-from titles.constants import MAX_LENGTH_NAME, MAX_LENGTH_SLUG, MAX_STR_LENGTH
+from datetime import datetime
+
+from titles.constants import MAX_LENGTH_NAME, MAX_STR_LENGTH
 
 
-class Category(models.Model):
-    """Модель категории произведений."""
+class NameSlugModel(models.Model):
+    """Абстрактная модель для объектов с именем и slug."""
 
     name = models.CharField(
         max_length=MAX_LENGTH_NAME,
-        verbose_name='Название категории'
+        verbose_name='Название'
     )
     slug = models.SlugField(
-        max_length=MAX_LENGTH_SLUG,
         unique=True,
-        verbose_name='Идентификатор категории'
+        verbose_name='Идентификатор'
     )
 
     class Meta:
+        abstract = True
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name[:MAX_STR_LENGTH]
+
+
+class Category(NameSlugModel):
+    """Модель категории произведений."""
+
+    class Meta(NameSlugModel.Meta):
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
 
-    def __str__(self):
-        return self.name[:MAX_STR_LENGTH]
 
-
-class Genre(models.Model):
+class Genre(NameSlugModel):
     """Модель жанра произведений."""
 
-    name = models.CharField(
-        max_length=MAX_LENGTH_NAME,
-        verbose_name='Название жанра'
-    )
-    slug = models.SlugField(
-        max_length=MAX_LENGTH_SLUG,
-        unique=True,
-        verbose_name='Идентификатор жанра'
-    )
-
-    class Meta:
+    class Meta(NameSlugModel.Meta):
         verbose_name = 'Жанр'
         verbose_name_plural = 'Жанры'
-
-    def __str__(self):
-        return self.name[:MAX_STR_LENGTH]
 
 
 class Title(models.Model):
@@ -53,8 +49,9 @@ class Title(models.Model):
         max_length=MAX_LENGTH_NAME,
         verbose_name='Название'
     )
-    year = models.IntegerField(
-        verbose_name='Год выпуска'
+    year = models.SmallIntegerField(
+        verbose_name='Год выпуска',
+        validators=[MaxValueValidator(datetime.now().year)],
     )
     description = models.TextField(
         blank=True,
@@ -73,10 +70,6 @@ class Title(models.Model):
         related_name='titles',
         verbose_name='Жанр'
     )
-    rating = models.FloatField(
-        null=True, blank=True,
-        verbose_name='Рейтинг'
-    )
 
     class Meta:
         verbose_name = 'Произведение'
@@ -85,8 +78,3 @@ class Title(models.Model):
 
     def __str__(self):
         return self.name[:MAX_STR_LENGTH]
-
-    def update_rating(self):
-        """Обновляет средний рейтинг произведения на основе отзывов."""
-        self.rating = self.reviews.aggregate(avg=Avg('score'))['avg'] or 0
-        self.save(update_fields=['rating'])

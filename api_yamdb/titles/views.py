@@ -1,77 +1,77 @@
+from django.db.models import Avg
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets
+from rest_framework import viewsets, mixins
 from rest_framework.filters import SearchFilter
+from rest_framework.permissions import SAFE_METHODS
 
 from titles.models import Category, Genre, Title
 from titles.permissions import AdminOrReadOnly
-from titles.serializers import (CategorySerializer, GenreSerializer,
-                                TitleReadSerializer, TitleWriteSerializer)
+from titles.serializers import (
+    CategorySerializer,
+    GenreSerializer,
+    TitleReadSerializer,
+    TitleWriteSerializer
+)
+from titles.utils import TitleFilter
 
-from .exceptions import MethodNotAllowedException
-from .utils import TitleFilter, validate_year
+
+class BaseNameSlugViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet
+):
+    """Базовый вьюсет для категорий и жанров."""
+    permission_classes = [AdminOrReadOnly]
+    lookup_field = 'slug'
+    filter_backends = [SearchFilter]
+    search_fields = ['name']
+
+    def get_queryset(self):
+        return self.model.objects.order_by('name')
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class CategoryViewSet(BaseNameSlugViewSet):
     """CRUD для категорий. Доступен только администратору."""
-
     serializer_class = CategorySerializer
-    permission_classes = [AdminOrReadOnly]
-    lookup_field = 'slug'
-    filter_backends = [SearchFilter]
-    search_fields = ['name']
-    http_method_names = ['get', 'post', 'delete']
-
-    def get_queryset(self):
-        return Category.objects.order_by('name')
-
-    def retrieve(self, request, *args, **kwargs):
-        raise MethodNotAllowedException("GET")
+    model = Category
 
 
-class GenreViewSet(viewsets.ModelViewSet):
+class GenreViewSet(BaseNameSlugViewSet):
     """CRUD для жанров. Доступен только администратору."""
-
     serializer_class = GenreSerializer
-    permission_classes = [AdminOrReadOnly]
-    lookup_field = 'slug'
-    filter_backends = [SearchFilter]
-    search_fields = ['name']
-    http_method_names = ['get', 'post', 'delete']
+    model = Genre
 
-    def get_queryset(self):
-        return Genre.objects.order_by('name')
-
-    def retrieve(self, request, *args, **kwargs):
-        raise MethodNotAllowedException("GET")
+    def perform_create(self, serializer):
+        serializer.save()
 
 
-class TitleViewSet(viewsets.ModelViewSet):
-    """CRUD для произведений. Чтение доступно всем, управление — админам."""
-
+class TitleViewSet(
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet
+):
+    """Вьюсет для произведений."""
     queryset = Title.objects.select_related(
-        'category').prefetch_related('genre')
+        'category'
+        ).prefetch_related(
+            'genre'
+            ).annotate(
+        rating=Avg('reviews__score')
+    ).order_by('id')
+    permission_classes = [AdminOrReadOnly]
     filter_backends = [DjangoFilterBackend]
     filterset_class = TitleFilter
-    http_method_names = [
-        'get',
-        'post',
-        'patch',
-        'delete'
-    ]
 
     def get_serializer_class(self):
-        if self.action in ('list', 'retrieve'):
+        if self.request.method in SAFE_METHODS:
             return TitleReadSerializer
         return TitleWriteSerializer
 
-    def get_permissions(self):
-        """Чтение доступно всем, управление — только администраторам."""
-        if self.action in ('list', 'retrieve'):
-            return []
-        return [AdminOrReadOnly()]
-
-    def perform_create(self, serializer):
-        """Валидация: нельзя добавлять произведения из будущего."""
-        year = serializer.validated_data.get('year')
-        serializer.validated_data['year'] = validate_year(year)
-        serializer.save()
+    def update(self, request, *args, **kwargs):
+        if request.method == 'PUT':
+            return self.http_method_not_allowed(request, *args, **kwargs)
+        return super().update(request, *args, **kwargs)

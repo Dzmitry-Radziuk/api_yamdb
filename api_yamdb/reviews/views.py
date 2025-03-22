@@ -35,16 +35,9 @@ class ReviewViewSet(ModelViewSet):
     def perform_create(self, serializer):
         title = get_title_by_id(self.kwargs)
         serializer.save(author=self.request.user, title=title)
-        title.update_rating()
 
     def perform_update(self, serializer):
-        instance = self.get_object()
-        old_score = instance.score
         super().perform_update(serializer)
-        if instance.score != old_score:
-            instance.title.update_rating()
 
     def perform_destroy(self, instance):
-        title = instance.title
         super().perform_destroy(instance)
-        title.update_rating()
