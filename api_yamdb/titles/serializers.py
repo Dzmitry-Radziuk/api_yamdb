@@ -10,10 +10,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = (
-            'name',
-            'slug'
-        )
+        fields = ['name','slug']
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -21,10 +18,8 @@ class GenreSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Genre
-        fields = (
-            'name',
-            'slug'
-        )
+        fields = ['name', 'slug']
+        
 
 
 class TitleReadSerializer(serializers.ModelSerializer):
@@ -41,7 +36,7 @@ class TitleReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Title
-        fields = (
+        fields = [
             'id',
             'name',
             'year',
@@ -49,7 +44,7 @@ class TitleReadSerializer(serializers.ModelSerializer):
             'description',
             'genre',
             'category'
-        )
+        ]
 
     def get_rating(self, obj):
         """Возвращает средний рейтинг произведения."""
@@ -71,14 +66,14 @@ class TitleWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Title
-        fields = (
+        fields = [
             'id',
             'name',
             'year',
             'description',
             'genre',
             'category'
-        )
+        ]
 
     def validate_year(self, value):
         """Запрещает указывать год выпуска больше текущего."""
