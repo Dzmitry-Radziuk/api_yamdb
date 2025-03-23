@@ -1,26 +1,21 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.conf import settings
+from django.utils.text import Truncator
 
-from reviews.constants import (MAX_REVIEW_SCORE, MAX_REVIEW_SCORE_MSG,
-                               MIN_REVIEW_SCORE, MIN_REVIEW_SCORE_MSG)
 from titles.models import Title
 from users.models import User
 
 
-class Comment(models.Model):
-    """Модель для хранения комментариев к отзывам."""
-    text = models.TextField(verbose_name='Текст комментария')
+class BaseTextModel(models.Model):
+    """Абстрактная модель для хранения текста, автора и даты публикации."""
+
+    text = models.TextField(verbose_name='Текст')
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='comments',
+        related_name='%(class)s',
         verbose_name='Автор'
-    )
-    review = models.ForeignKey(
-        'Review',
-        on_delete=models.CASCADE,
-        related_name='comments',
-        verbose_name='Отзыв'
     )
     pub_date = models.DateTimeField(
         auto_now_add=True,
@@ -29,29 +24,58 @@ class Comment(models.Model):
     )
 
     class Meta:
-        verbose_name = 'Комментарий'
-        verbose_name_plural = 'Комментарии'
+        abstract = True
         ordering = ['-pub_date']
 
     def __str__(self):
-        return f'{self.author.username} - {self.review.title.name}'
+        truncated_author = Truncator(self.author.username).chars(
+            settings.MAX_LENGTH_STR
+        )
+        truncated_text = Truncator(self.text).chars(
+            settings.MAX_LENGTH_TEXT
+        )
+        return f'{truncated_author} - {truncated_text}'
 
 
-class Review(models.Model):
+class Comment(BaseTextModel):
+    """Модель для хранения комментариев к отзывам."""
+
+    review = models.ForeignKey(
+        'Review',
+        on_delete=models.CASCADE,
+        related_name='comments',
+        verbose_name='Отзыв'
+    )
+
+    class Meta(BaseTextModel.Meta):
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
+
+    def __str__(self):
+        truncated_author = Truncator(self.author.username).chars(
+            settings.MAX_LENGTH_STR
+        )
+        truncated_review = Truncator(self.review.text).chars(
+            settings.MAX_LENGTH_TEXT
+        )
+        return f'{truncated_author} - {truncated_review}'
+
+
+class Review(BaseTextModel):
     """Модель для хранения отзывов на произведения."""
-    text = models.TextField(verbose_name='Текст отзыва')
+
     score = models.IntegerField(
         verbose_name='Оценка',
         validators=[
-            MinValueValidator(MIN_REVIEW_SCORE, MIN_REVIEW_SCORE_MSG),
-            MaxValueValidator(MAX_REVIEW_SCORE, MAX_REVIEW_SCORE_MSG),
+            MinValueValidator(
+                settings.MIN_REVIEW_SCORE,
+                settings.MIN_REVIEW_SCORE_MSG
+            ),
+            MaxValueValidator(
+                settings.MAX_REVIEW_SCORE,
+                settings.MAX_REVIEW_SCORE_MSG
+            )
         ]
-    )
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='reviews',
-        verbose_name='Автор'
     )
     title = models.ForeignKey(
         Title,
@@ -59,16 +83,10 @@ class Review(models.Model):
         related_name='reviews',
         verbose_name='Произведение'
     )
-    pub_date = models.DateTimeField(
-        auto_now_add=True,
-        db_index=True,
-        verbose_name='Дата публикации'
-    )
 
-    class Meta:
+    class Meta(BaseTextModel.Meta):
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
-        ordering = ['-pub_date']
         constraints = [
             models.UniqueConstraint(
                 fields=['author', 'title'],
@@ -77,4 +95,23 @@ class Review(models.Model):
         ]
 
     def __str__(self):
-        return f'{self.author.username} - {self.title.name}'
+        truncated_author = Truncator(self.author.username).chars(
+            settings.MAX_LENGTH_STR
+        )
+        truncated_title = Truncator(self.title.name).chars(
+            settings.MAX_LENGTH_TEXT
+        )
+        return f'{truncated_author} - {truncated_title}'
+
+    def save(self, *args, **kwargs):
+        """Переопределение метода save для обновления рейтинга."""
+        super().save(*args, **kwargs)
+        if hasattr(self.title, 'update_rating'):
+            self.title.update_rating()
+
+    def delete(self, *args, **kwargs):
+        """Переопределение метода delete для обновления рейтинга."""
+        title = self.title
+        super().delete(*args, **kwargs)
+        if hasattr(title, 'update_rating'):
+            title.update_rating()

@@ -3,18 +3,26 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
-from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
+from rest_framework.permissions import (
+    SAFE_METHODS, AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
+)
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.tokens import AccessToken
 
 from api.paginations import UserPagination
-from api.permissions import AdminOrReadOnly, IsAdmin, IsUserOrAdminOrModerator
-from api.serializers import (CategorySerializer, GenreSerializer,
-                             SignupSerializer, TitleReadSerializer,
-                             TitleWriteSerializer, TokenSerializer,
-                             UserSerializer)
-from api.utils import TitleFilter, send_confirmation_email
+from api.permissions import (AdminOrReadOnly,
+                             IsAdmin, IsAuthorOrModeratorOrAdmin)
+from api.serializers import (
+    CategorySerializer, GenreSerializer, SignupSerializer,
+    TitleReadSerializer, TitleWriteSerializer, TokenSerializer,
+    UserSerializer, CommentSerializer, ReviewSerializer
+)
+from api.common.utils import (
+    TitleFilter, send_confirmation_email,
+    get_review_by_id, get_title_by_id
+)
 from titles.models import Category, Genre, Title
 from users.models import User
 
@@ -65,7 +73,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False,
             methods=['get', 'patch'],
-            permission_classes=[IsUserOrAdminOrModerator, IsAuthenticated])
+            permission_classes=[IsAuthorOrModeratorOrAdmin, IsAuthenticated])
     def me(self, request):
         """Возвращает или обновляет профиль текущего пользователя."""
         if request.method == 'PATCH':
@@ -77,7 +85,8 @@ class UserViewSet(viewsets.ModelViewSet):
             serializer.save()
             return Response(serializer.data)
         return Response(self.get_serializer(request.user).data)
-    
+
+
 class BaseNameSlugViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
@@ -123,12 +132,8 @@ class TitleViewSet(
     """Вьюсет для произведений."""
 
     queryset = Title.objects.select_related(
-        'category'
-        ).prefetch_related(
-            'genre'
-            ).annotate(
-        rating=Avg('reviews__score')
-    ).order_by('id')
+        'category').prefetch_related('genre').annotate(rating=Avg(
+            'reviews__score')).order_by('id')
     permission_classes = [AdminOrReadOnly]
     filter_backends = [DjangoFilterBackend]
     filterset_class = TitleFilter
@@ -143,3 +148,40 @@ class TitleViewSet(
             return self.http_method_not_allowed(request, *args, **kwargs)
         return super().update(request, *args, **kwargs)
 
+
+class CommentViewSet(ModelViewSet):
+    """Вьюсет для работы с комментариями."""
+
+    serializer_class = CommentSerializer
+    permission_classes = [
+        IsAuthenticatedOrReadOnly,
+        IsAuthorOrModeratorOrAdmin
+    ]
+    http_method_names = ['get', 'post', 'patch', 'delete']
+
+    def get_queryset(self):
+        return get_review_by_id(self.kwargs).comments.select_related(
+            'author', 'review')
+
+    def perform_create(self, serializer):
+        serializer.save(
+            author=self.request.user, review=get_review_by_id(self.kwargs))
+
+
+class ReviewViewSet(ModelViewSet):
+    """Вьюсет для работы с отзывами."""
+
+    serializer_class = ReviewSerializer
+    permission_classes = [
+        IsAuthenticatedOrReadOnly,
+        IsAuthorOrModeratorOrAdmin
+    ]
+    http_method_names = ['get', 'post', 'patch', 'delete']
+
+    def get_queryset(self):
+        return get_title_by_id(self.kwargs).reviews.select_related(
+            'author', 'title')
+
+    def perform_create(self, serializer):
+        title = get_title_by_id(self.kwargs)
+        serializer.save(author=self.request.user, title=title)

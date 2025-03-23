@@ -3,13 +3,20 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from api.exceptions import InvalidConfirmationCode, UserNotFound
-from api.utils import generate_confirmation_code
-from api.validators import (username_not_me_validator, username_validator,
-                            validate_slug, validate_unique_slug, validate_year)
+from api.common.utils import generate_confirmation_code, summarize_text
+from api.common.validators import (username_not_me_validator,
+                                   username_validator, validate_slug,
+                                   validate_unique_slug, validate_year,
+                                   get_score_validators,
+                                   validate_unique_review)
+
 from titles.models import Category, Genre, Title
-from users.constants import (FORBIDDEN_USERNAMES, MAX_LENGTH_EMAIL,
-                             MAX_LENGTH_NAME)
+from django.conf import settings
+
 from users.models import User
+from rest_framework import serializers
+
+from reviews.models import Comment, Review
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -32,12 +39,12 @@ class SignupSerializer(serializers.ModelSerializer):
 
     username = serializers.CharField(
         required=True,
-        max_length=MAX_LENGTH_NAME,
+        max_length=settings.MAX_LENGTH_NAME,
         validators=[username_validator, username_not_me_validator]
     )
     email = serializers.EmailField(
         required=True,
-        max_length=MAX_LENGTH_EMAIL,
+        max_length=settings.MAX_LENGTH_EMAIL,
         validators=[]
     )
 
@@ -62,7 +69,7 @@ class SignupSerializer(serializers.ModelSerializer):
                 raise ValidationError(
                     "Пользователь с таким email уже существует.")
 
-        if username.lower() in FORBIDDEN_USERNAMES:
+        if username.lower() in settings.FORBIDDEN_USERNAMES:
             raise ValidationError(
                 f"Использование \"{username}\" в качестве username запрещено."
             )
@@ -137,7 +144,15 @@ class TitleReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Title
-        fields = ['id', 'name', 'year', 'rating', 'description', 'genre', 'category']
+        fields = [
+            'id',
+            'name',
+            'year',
+            'rating',
+            'description',
+            'genre',
+            'category'
+        ]
 
 
 class TitleWriteSerializer(serializers.ModelSerializer):
@@ -158,3 +173,39 @@ class TitleWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Title
         fields = ['id', 'name', 'year', 'description', 'genre', 'category']
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    """Сериализатор для комментариев."""
+
+    author = serializers.SlugRelatedField(
+        slug_field='username',
+        read_only=True
+    )
+
+    class Meta:
+        model = Comment
+        fields = ['id', 'text', 'author', 'pub_date']
+
+    def get_text(self, obj):
+        return summarize_text(obj.text)
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    """Сериализатор для отзывов."""
+
+    author = serializers.SlugRelatedField(
+        default=serializers.CurrentUserDefault(),
+        slug_field='username',
+        read_only=True
+    )
+    score = serializers.IntegerField(
+        validators=get_score_validators()
+    )
+
+    class Meta:
+        model = Review
+        fields = ['id', 'text', 'score', 'author', 'pub_date']
+
+    def validate(self, data):
+        return validate_unique_review(data, self.context)
