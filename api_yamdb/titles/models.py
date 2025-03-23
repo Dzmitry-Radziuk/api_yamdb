@@ -1,7 +1,7 @@
-from django.db import models
-from django.core.validators import MaxValueValidator
-
 from datetime import datetime
+
+from django.core.validators import MaxValueValidator
+from django.db import models
 
 from titles.constants import MAX_LENGTH_NAME, MAX_STR_LENGTH
 
