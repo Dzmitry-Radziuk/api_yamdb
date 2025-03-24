@@ -1,14 +1,12 @@
 from datetime import datetime
 
-from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
-from django_filters.rest_framework import CharFilter, FilterSet, NumberFilter
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
 
+from api.common.validators import validate_role
 from reviews.models import Review, Title
 
 from titles.models import Title
@@ -31,13 +29,6 @@ def send_confirmation_email(email, confirmation_code):
     )
 
 
-def validate_role(role):
-    """Проверяет, является ли роль допустимой."""
-    if role not in dict(settings.ROLE_CHOICES):
-        raise ValidationError("Передана недопустимая роль.")
-    return role
-
-
 def check_required_fields(data, fields):
     """Проверяет наличие обязательных полей в data."""
     errors = {}
@@ -57,31 +48,6 @@ def prepare_user_creation_data(data, default_role=settings.USER):
     data['password'] = make_password(None)
     data.pop('confirmation_code', None)
     return data
-
-
-class TitleFilter(FilterSet):
-    """Фильтрация произведений по slug категории и жанра, названию и году."""
-
-    category = CharFilter(
-        field_name='category__slug',
-        lookup_expr='exact'
-    )
-    genre = CharFilter(
-        field_name='genre__slug',
-        lookup_expr='exact'
-    )
-    name = CharFilter(
-        field_name='name',
-        lookup_expr='icontains'
-    )
-    year = NumberFilter(
-        field_name='year',
-        lookup_expr='exact'
-    )
-
-    class Meta:
-        model = Title
-        fields = ['category', 'genre', 'name', 'year']
 
 
 def validate_year(year):

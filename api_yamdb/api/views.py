@@ -20,9 +20,10 @@ from api.serializers import (
     UserSerializer, CommentSerializer, ReviewSerializer
 )
 from api.common.utils import (
-    TitleFilter, send_confirmation_email,
+    send_confirmation_email,
     get_review_by_id, get_title_by_id
 )
+from api.filters import TitleFilter
 from titles.models import Category, Genre, Title
 from users.models import User
 

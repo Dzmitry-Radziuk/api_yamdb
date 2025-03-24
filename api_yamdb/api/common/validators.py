@@ -1,10 +1,16 @@
 import re
+
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.utils.timezone import now
 from rest_framework import serializers
 from django.conf import settings
 
+from api_yamdb.settings import (
+    FORBIDDEN_NAME,
+    MAX_LENGTH_SLUG,
+    SLUG_REGEX_PATTERN
+)
 
 username_validator = RegexValidator(
     regex=settings.USERNAME_REGEX,
@@ -13,25 +19,36 @@ username_validator = RegexValidator(
 )
 
 
+def doc(docstring):
+    """Декоратор для установки docstring."""
+
+    def decorator(func):
+        func.__doc__ = docstring
+        return func
+
+    return decorator
+
+
 def username_not_me_validator(value):
-    if value.lower() == 'me':
+    if value == FORBIDDEN_NAME:
         raise ValidationError(
-            "Нельзя использовать \"me\" в качестве никнейма.")
+            f"Нельзя использовать \"{FORBIDDEN_NAME}\" в качестве никнейма.")
 
 
+@doc(
+    "Проверяет, что slug состоит только из букв,"
+    "цифр, дефиса и подчёркивания."
+    f"Максимальная длина: {MAX_LENGTH_SLUG} символов."
+)
 def validate_slug(value):
-    """
-    Проверяет, что slug соответствует паттерну:
-    ^[-a-zA-Z0-9_]+$ и длине <= 50.
-    """
-    if not re.match(r'^[-a-zA-Z0-9_]+$', value):
+    if not re.match(SLUG_REGEX_PATTERN, value):
         raise serializers.ValidationError(
             "Slug должен содержать только буквы, цифры, "
             "дефис или подчёркивание."
         )
-    if len(value) > settings.MAX_LENGTH_SLUG:
+    if len(value) > MAX_LENGTH_SLUG:
         raise serializers.ValidationError(
-            f"Slug не должен превышать {settings.MAX_LENGTH_SLUG} символов."
+            f"Slug не должен превышать {MAX_LENGTH_SLUG} символов."
         )
     return value
 
@@ -75,3 +92,10 @@ def validate_unique_review(data, context):
                 "Вы уже оставляли отзыв на это произведение."
             )
     return data
+
+
+def validate_role(role):
+    """Проверяет, является ли роль допустимой."""
+    if role not in dict(settings.ROLE_CHOICES):
+        raise ValidationError("Передана недопустимая роль.")
+    return role

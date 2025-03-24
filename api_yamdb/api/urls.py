@@ -20,13 +20,6 @@ router_v1.register(
     CommentViewSet,
     basename='comments'
 )
-router_v1.register(
-    r'titles/(?P<title_id>\d+)/reviews',
-    ReviewViewSet,
-    basename='reviews'
-)
-
-
 auth_urls = [
     path('signup/', SignupView.as_view(), name='signup'),
     path('token/', TokenViewSet.as_view({'post': 'create'}), name='token'),

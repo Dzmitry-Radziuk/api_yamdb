@@ -14,7 +14,7 @@ class BaseTextModel(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='%(class)s',
+        related_name='%(class)ss',
         verbose_name='Автор'
     )
     pub_date = models.DateTimeField(
@@ -102,16 +102,3 @@ class Review(BaseTextModel):
             settings.MAX_LENGTH_TEXT
         )
         return f'{truncated_author} - {truncated_title}'
-
-    def save(self, *args, **kwargs):
-        """Переопределение метода save для обновления рейтинга."""
-        super().save(*args, **kwargs)
-        if hasattr(self.title, 'update_rating'):
-            self.title.update_rating()
-
-    def delete(self, *args, **kwargs):
-        """Переопределение метода delete для обновления рейтинга."""
-        title = self.title
-        super().delete(*args, **kwargs)
-        if hasattr(title, 'update_rating'):
-            title.update_rating()
