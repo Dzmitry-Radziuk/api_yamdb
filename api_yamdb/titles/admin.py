@@ -56,6 +56,6 @@ class TitleAdmin(admin.ModelAdmin):
         'category',
     ]
 
+    @admin.display(description='Жанры')
     def get_genres(self, obj):
         return ", ".join([genre.name for genre in obj.genre.all()])
-    get_genres.short_description = 'Жанры'

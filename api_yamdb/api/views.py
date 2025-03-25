@@ -33,12 +33,10 @@ class SignupView(APIView):
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
+        serializer.save()
 
-        return Response(
-            {'username': user.username, 'email': user.email},
-            status=status.HTTP_200_OK
-        )
+        return Response({**serializer.data},
+                        status=status.HTTP_200_OK)
 
 
 class TokenViewSet(viewsets.ViewSet):
@@ -122,14 +120,7 @@ class GenreViewSet(BaseNameSlugViewSet):
     model = Genre
 
 
-class TitleViewSet(
-    mixins.CreateModelMixin,
-    mixins.RetrieveModelMixin,
-    mixins.UpdateModelMixin,
-    mixins.DestroyModelMixin,
-    mixins.ListModelMixin,
-    viewsets.GenericViewSet
-):
+class TitleViewSet(viewsets.ModelViewSet):
     """Вьюсет для произведений."""
 
     queryset = Title.objects.select_related(

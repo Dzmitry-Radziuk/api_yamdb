@@ -7,11 +7,13 @@ from api.common.constants import (MAX_LENGTH_EMAIL, MAX_LENGTH_NAME,
                                   MAX_LENGTH_TEXT, ROLE_CHOICES)
 from api.common.utils import (generate_confirmation_code,
                               send_confirmation_email)
-from api.common.validators import (get_score_validators, username_validator,
-                                   validate_forbidden_username, validate_role,
-                                   validate_unique_review,
-                                   validate_unique_username_email,
+from api.common.validators import (username_validator,
+                                   validate_forbidden_username,
                                    validate_year)
+from api.common.model_validators import (
+    get_score_validators, validate_role,
+    validate_unique_review, validate_unique_username_email
+)
 from api.exceptions import InvalidConfirmationCode, UserNotFound
 from reviews.models import Comment, Review
 from titles.models import Category, Genre, Title
@@ -65,7 +67,6 @@ class SignupSerializer(serializers.Serializer):
             email=validated_data.get('email'),
             defaults=validated_data
         )
-        generate_confirmation_code(user)
         send_confirmation_email(user.email, generate_confirmation_code(user))
         return user
 
