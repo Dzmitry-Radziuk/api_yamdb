@@ -1,17 +1,15 @@
-from datetime import datetime
-
-from django.core.validators import MaxValueValidator
 from django.db import models
 from django.utils.text import Truncator
 
-from django.conf import settings
+from api.common.constants import MAX_LENGTH_NAME, MAX_LENGTH_STR
+from api.common.validators import validate_year
 
 
 class NameSlugModel(models.Model):
     """Абстрактная модель для объектов с именем и slug."""
 
     name = models.CharField(
-        max_length=settings.MAX_LENGTH_NAME,
+        max_length=MAX_LENGTH_NAME,
         verbose_name='Название'
     )
     slug = models.SlugField(
@@ -24,7 +22,7 @@ class NameSlugModel(models.Model):
         ordering = ['name']
 
     def __str__(self):
-        return Truncator(self.name).chars(settings.MAX_LENGTH_STR)
+        return Truncator(self.name).chars(MAX_LENGTH_STR)
 
 
 class Category(NameSlugModel):
@@ -47,12 +45,12 @@ class Title(models.Model):
     """Модель произведения."""
 
     name = models.CharField(
-        max_length=settings.MAX_LENGTH_NAME,
+        max_length=MAX_LENGTH_NAME,
         verbose_name='Название'
     )
     year = models.SmallIntegerField(
         verbose_name='Год выпуска',
-        validators=[MaxValueValidator(datetime.now().year)],
+        validators=[validate_year],
     )
     description = models.TextField(
         blank=True,
@@ -78,4 +76,4 @@ class Title(models.Model):
         ordering = ['name']
 
     def __str__(self):
-        return Truncator(self.name).chars(settings.MAX_LENGTH_STR)
+        return Truncator(self.name).chars(MAX_LENGTH_STR)

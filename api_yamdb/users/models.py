@@ -2,17 +2,18 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.text import Truncator
 
-from api.common.validators import username_not_me_validator, username_validator
-from django.conf import settings
+from api.common import constants
+from api.common.validators import (username_validator,
+                                   validate_forbidden_username)
 
 
 class User(AbstractUser):
     """Кастомная модель пользователя."""
 
     username = models.CharField(
-        max_length=settings.MAX_LENGTH_NAME,
+        max_length=constants.MAX_LENGTH_NAME,
         unique=True,
-        validators=[username_validator, username_not_me_validator],
+        validators=[username_validator, validate_forbidden_username],
         error_messages={
             'unique': 'Пользователь с таким именем уже существует.',
         },
@@ -21,7 +22,7 @@ class User(AbstractUser):
 
     email = models.EmailField(
         unique=True,
-        max_length=settings.MAX_LENGTH_EMAIL,
+        max_length=constants.MAX_LENGTH_EMAIL,
         verbose_name='Email'
     )
     bio = models.TextField(
@@ -29,15 +30,10 @@ class User(AbstractUser):
         verbose_name='Биография'
     )
     role = models.CharField(
-        max_length=settings.MAX_LENGTH_ROLE,
-        choices=settings.ROLE_CHOICES,
-        default=settings.USER,
+        max_length=constants.MAX_LENGTH_ROLE,
+        choices=constants.ROLE_CHOICES,
+        default=constants.USER,
         verbose_name='Роль'
-    )
-    confirmation_code = models.CharField(
-        max_length=settings.MAX_LENGTH_CONFIRM_CODE,
-        blank=True,
-        null=True
     )
 
     class Meta:
@@ -46,12 +42,12 @@ class User(AbstractUser):
         verbose_name_plural = 'Пользователи'
 
     def __str__(self):
-        return Truncator(self.username).chars(settings.MAX_LENGTH_STR)
+        return Truncator(self.username).chars(constants.MAX_LENGTH_STR)
 
     @property
     def is_admin(self):
-        return self.role == settings.ADMIN or self.is_superuser
+        return self.role == constants.ADMIN or self.is_superuser
 
     @property
     def is_moderator(self):
-        return self.role == settings.MODERATOR
+        return self.role == constants.MODERATOR

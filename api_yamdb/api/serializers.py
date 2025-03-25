@@ -1,25 +1,30 @@
 from django.contrib.auth.hashers import make_password
-from rest_framework.exceptions import ValidationError
-
-from api.exceptions import InvalidConfirmationCode, UserNotFound
-from api.common.utils import generate_confirmation_code, summarize_text
-from api.common.validators import (username_not_me_validator,
-                                   username_validator, validate_slug,
-                                   validate_unique_slug, validate_year,
-                                   get_score_validators,
-                                   validate_unique_review)
-
-from titles.models import Category, Genre, Title
-from django.conf import settings
-
-from users.models import User
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.text import Truncator
 from rest_framework import serializers
 
+from api.common.constants import (MAX_LENGTH_EMAIL, MAX_LENGTH_NAME,
+                                  MAX_LENGTH_TEXT, ROLE_CHOICES)
+from api.common.utils import (generate_confirmation_code,
+                              send_confirmation_email)
+from api.common.validators import (get_score_validators, username_validator,
+                                   validate_forbidden_username, validate_role,
+                                   validate_unique_review,
+                                   validate_unique_username_email,
+                                   validate_year)
+from api.exceptions import InvalidConfirmationCode, UserNotFound
 from reviews.models import Comment, Review
+from titles.models import Category, Genre, Title
+from users.models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Сериализатор для модели User."""
+    """Сериализатор пользователя."""
+
+    role = serializers.ChoiceField(
+        choices=ROLE_CHOICES,
+        required=False,
+    )
 
     class Meta:
         model = User
@@ -32,46 +37,25 @@ class UserSerializer(serializers.ModelSerializer):
             'role'
         ]
 
+    def validate_role(self, role):
+        return validate_role(self, role)
 
-class SignupSerializer(serializers.ModelSerializer):
+
+class SignupSerializer(serializers.Serializer):
     """Сериализатор регистрации пользователя."""
 
     username = serializers.CharField(
         required=True,
-        max_length=settings.MAX_LENGTH_NAME,
-        validators=[username_validator, username_not_me_validator]
+        max_length=MAX_LENGTH_NAME,
+        validators=[username_validator, validate_forbidden_username]
     )
     email = serializers.EmailField(
         required=True,
-        max_length=settings.MAX_LENGTH_EMAIL,
-        validators=[]
+        max_length=MAX_LENGTH_EMAIL,
     )
 
-    class Meta:
-        model = User
-        fields = ['username', 'email']
-
     def validate(self, data):
-        username = data.get('username')
-        email = data.get('email')
-        user_qs = User.objects.filter(username=username)
-        if user_qs.exists():
-            user = user_qs.first()
-            if user.email != email:
-                raise ValidationError(
-                    "Пользователь с таким username уже существует.")
-
-        email_qs = User.objects.filter(email=email)
-        if email_qs.exists():
-            user = email_qs.first()
-            if user.username != username:
-                raise ValidationError(
-                    "Пользователь с таким email уже существует.")
-
-        if username.lower() in settings.FORBIDDEN_USERNAMES:
-            raise ValidationError(
-                f"Использование \"{username}\" в качестве username запрещено."
-            )
+        validate_unique_username_email(data)
         return data
 
     def create(self, validated_data):
@@ -81,9 +65,8 @@ class SignupSerializer(serializers.ModelSerializer):
             email=validated_data.get('email'),
             defaults=validated_data
         )
-        new_code = generate_confirmation_code(user)
-        user.confirmation_code = new_code
-        user.save()
+        generate_confirmation_code(user)
+        send_confirmation_email(user.email, generate_confirmation_code(user))
         return user
 
 
@@ -100,20 +83,16 @@ class TokenSerializer(serializers.Serializer):
             user = User.objects.get(username=username)
         except User.DoesNotExist:
             raise UserNotFound()
-        if user.confirmation_code != confirmation_code:
+
+        if not default_token_generator.check_token(user, confirmation_code):
             raise InvalidConfirmationCode()
+
         data['user'] = user
         return data
 
 
 class CategorySerializer(serializers.ModelSerializer):
     """Сериализатор для категорий."""
-
-    slug = serializers.CharField(validators=[validate_slug])
-
-    def validate(self, data):
-        """Проверяет уникальность slug через валидатор."""
-        return validate_unique_slug(data, Category, self.instance)
 
     class Meta:
         model = Category
@@ -122,12 +101,6 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class GenreSerializer(serializers.ModelSerializer):
     """Сериализатор для жанров."""
-
-    slug = serializers.CharField(validators=[validate_slug])
-
-    def validate(self, data):
-        """Проверяет уникальность slug через валидатор."""
-        return validate_unique_slug(data, Genre, self.instance)
 
     class Meta:
         model = Genre
@@ -139,7 +112,7 @@ class TitleReadSerializer(serializers.ModelSerializer):
 
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(many=True, read_only=True)
-    rating = serializers.FloatField(read_only=True)
+    rating = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = Title
@@ -173,6 +146,10 @@ class TitleWriteSerializer(serializers.ModelSerializer):
         model = Title
         fields = ['id', 'name', 'year', 'description', 'genre', 'category']
 
+    def to_representation(self, instance):
+        """Возвращает данные в формате TitleReadSerializer."""
+        return TitleReadSerializer(instance).data
+
 
 class CommentSerializer(serializers.ModelSerializer):
     """Сериализатор для комментариев."""
@@ -187,7 +164,7 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ['id', 'text', 'author', 'pub_date']
 
     def get_text(self, obj):
-        return summarize_text(obj.text)
+        return Truncator(obj.text).chars(MAX_LENGTH_TEXT)
 
 
 class ReviewSerializer(serializers.ModelSerializer):

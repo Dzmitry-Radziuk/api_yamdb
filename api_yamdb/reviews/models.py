@@ -1,8 +1,8 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.conf import settings
 from django.utils.text import Truncator
 
+from api.common import constants
 from titles.models import Title
 from users.models import User
 
@@ -29,10 +29,10 @@ class BaseTextModel(models.Model):
 
     def __str__(self):
         truncated_author = Truncator(self.author.username).chars(
-            settings.MAX_LENGTH_STR
+            constants.MAX_LENGTH_STR
         )
         truncated_text = Truncator(self.text).chars(
-            settings.MAX_LENGTH_TEXT
+            constants.MAX_LENGTH_TEXT
         )
         return f'{truncated_author} - {truncated_text}'
 
@@ -53,10 +53,10 @@ class Comment(BaseTextModel):
 
     def __str__(self):
         truncated_author = Truncator(self.author.username).chars(
-            settings.MAX_LENGTH_STR
+            constants.MAX_LENGTH_STR
         )
         truncated_review = Truncator(self.review.text).chars(
-            settings.MAX_LENGTH_TEXT
+            constants.MAX_LENGTH_TEXT
         )
         return f'{truncated_author} - {truncated_review}'
 
@@ -68,12 +68,12 @@ class Review(BaseTextModel):
         verbose_name='Оценка',
         validators=[
             MinValueValidator(
-                settings.MIN_REVIEW_SCORE,
-                settings.MIN_REVIEW_SCORE_MSG
+                constants.MIN_REVIEW_SCORE,
+                constants.MIN_REVIEW_SCORE_MSG
             ),
             MaxValueValidator(
-                settings.MAX_REVIEW_SCORE,
-                settings.MAX_REVIEW_SCORE_MSG
+                constants.MAX_REVIEW_SCORE,
+                constants.MAX_REVIEW_SCORE_MSG
             )
         ]
     )
@@ -96,9 +96,9 @@ class Review(BaseTextModel):
 
     def __str__(self):
         truncated_author = Truncator(self.author.username).chars(
-            settings.MAX_LENGTH_STR
+            constants.MAX_LENGTH_STR
         )
         truncated_title = Truncator(self.title.name).chars(
-            settings.MAX_LENGTH_TEXT
+            constants.MAX_LENGTH_TEXT
         )
         return f'{truncated_author} - {truncated_title}'

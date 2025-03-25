@@ -1,22 +1,44 @@
-import re
-
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.utils.timezone import now
 from rest_framework import serializers
-from django.conf import settings
 
-from api_yamdb.settings import (
-    FORBIDDEN_NAME,
-    MAX_LENGTH_SLUG,
-    SLUG_REGEX_PATTERN
-)
+from api.common.constants import (FORBIDDEN_USERNAMES, MAX_LENGTH_SLUG,
+                                  USERNAME_REGEX)
 
 username_validator = RegexValidator(
-    regex=settings.USERNAME_REGEX,
-    message=("Введите корректное имя пользователя. "
-             "Допустимы буквы, цифры и символы @/./+/-/_.")
+    regex=USERNAME_REGEX,
+    message=(f"Введите корректное имя пользователя. "
+             f"Допустимы буквы, цифры и символы {USERNAME_REGEX}")
 )
+
+
+def validate_unique_username_email(data):
+    """Проверяет уникальность username и email."""
+    from users.models import User
+    username = data.get('username')
+    email = data.get('email')
+
+    user_qs = User.objects.filter(username=username)
+    if user_qs.exists():
+        user = user_qs.first()
+        if user.email != email:
+            raise ValidationError(
+                "Пользователь с таким username уже существует.")
+
+    email_qs = User.objects.filter(email=email)
+    if email_qs.exists():
+        user = email_qs.first()
+        if user.username != username:
+            raise ValidationError(
+                "Пользователь с таким email уже существует.")
+
+
+def validate_forbidden_username(username):
+    """Проверяет, что username не запрещён."""
+    if username in FORBIDDEN_USERNAMES:
+        raise ValidationError(
+            f"Использование \"{username}\" в качестве username запрещено.")
 
 
 def doc(docstring):
@@ -29,30 +51,11 @@ def doc(docstring):
     return decorator
 
 
-def username_not_me_validator(value):
-    if value == FORBIDDEN_NAME:
-        raise ValidationError(
-            f"Нельзя использовать \"{FORBIDDEN_NAME}\" в качестве никнейма.")
-
-
 @doc(
     "Проверяет, что slug состоит только из букв,"
     "цифр, дефиса и подчёркивания."
     f"Максимальная длина: {MAX_LENGTH_SLUG} символов."
 )
-def validate_slug(value):
-    if not re.match(SLUG_REGEX_PATTERN, value):
-        raise serializers.ValidationError(
-            "Slug должен содержать только буквы, цифры, "
-            "дефис или подчёркивание."
-        )
-    if len(value) > MAX_LENGTH_SLUG:
-        raise serializers.ValidationError(
-            f"Slug не должен превышать {MAX_LENGTH_SLUG} символов."
-        )
-    return value
-
-
 def validate_year(value):
     """Проверяет, что год не превышает текущий."""
     if value > now().year:
@@ -60,17 +63,6 @@ def validate_year(value):
             "Год выпуска не может быть больше текущего года."
         )
     return value
-
-
-def validate_unique_slug(data, model, instance=None):
-    """Проверяет уникальность slug для заданной модели."""
-    slug = data.get('slug')
-    if model.objects.exclude(
-            id=getattr(instance, "id", None)).filter(slug=slug).exists():
-        raise serializers.ValidationError(
-            {'slug': f"{model.__name__} с таким slug уже существует."}
-        )
-    return data
 
 
 def get_score_validators():
@@ -94,8 +86,11 @@ def validate_unique_review(data, context):
     return data
 
 
-def validate_role(role):
-    """Проверяет, является ли роль допустимой."""
-    if role not in dict(settings.ROLE_CHOICES):
-        raise ValidationError("Передана недопустимая роль.")
+def validate_role(serializer, role):
+    """Запрещает изменять роль обычным пользователям."""
+    user = serializer.context['request'].user
+
+    if not user.is_admin:
+        raise serializers.ValidationError("Изменение роли запрещено.")
+
     return role

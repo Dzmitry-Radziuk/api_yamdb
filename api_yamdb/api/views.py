@@ -3,27 +3,24 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
-from rest_framework.permissions import (
-    SAFE_METHODS, AllowAny, IsAuthenticated, IsAuthenticatedOrReadOnly
-)
+from rest_framework.permissions import (SAFE_METHODS, AllowAny,
+                                        IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.tokens import AccessToken
 
-from api.paginations import UserPagination
-from api.permissions import (AdminOrReadOnly,
-                             IsAdmin, IsAuthorOrModeratorOrAdmin)
-from api.serializers import (
-    CategorySerializer, GenreSerializer, SignupSerializer,
-    TitleReadSerializer, TitleWriteSerializer, TokenSerializer,
-    UserSerializer, CommentSerializer, ReviewSerializer
-)
-from api.common.utils import (
-    send_confirmation_email,
-    get_review_by_id, get_title_by_id
-)
+from api.common.utils import get_review_by_id, get_title_by_id
 from api.filters import TitleFilter
+from api.paginations import UserPagination
+from api.permissions import (AdminOrReadOnly, IsAdmin,
+                             IsAuthorOrModeratorOrAdmin)
+from api.serializers import (CategorySerializer, CommentSerializer,
+                             GenreSerializer, ReviewSerializer,
+                             SignupSerializer, TitleReadSerializer,
+                             TitleWriteSerializer, TokenSerializer,
+                             UserSerializer)
 from titles.models import Category, Genre, Title
 from users.models import User
 
@@ -37,7 +34,7 @@ class SignupView(APIView):
         serializer = SignupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        send_confirmation_email(user.email, user.confirmation_code)
+
         return Response(
             {'username': user.username, 'email': user.email},
             status=status.HTTP_200_OK
@@ -72,20 +69,26 @@ class UserViewSet(viewsets.ModelViewSet):
     filter_backends = [SearchFilter]
     search_fields = ['username', 'email']
 
-    @action(detail=False,
-            methods=['get', 'patch'],
-            permission_classes=[IsAuthorOrModeratorOrAdmin, IsAuthenticated])
+    @action(
+        detail=False,
+        methods=['get', 'patch'],
+        permission_classes=[IsAuthenticated & IsAuthorOrModeratorOrAdmin]
+    )
     def me(self, request):
         """Возвращает или обновляет профиль текущего пользователя."""
+
         if request.method == 'PATCH':
-            data = request.data.copy()
-            data.pop('role', None)
             serializer = self.get_serializer(
-                request.user, data=data, partial=True)
+                request.user,
+                data=request.data,
+                partial=True
+            )
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
-        return Response(self.get_serializer(request.user).data)
+
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)
 
 
 class BaseNameSlugViewSet(
@@ -118,9 +121,6 @@ class GenreViewSet(BaseNameSlugViewSet):
     serializer_class = GenreSerializer
     model = Genre
 
-    def perform_create(self, serializer):
-        serializer.save()
-
 
 class TitleViewSet(
     mixins.CreateModelMixin,
@@ -133,21 +133,22 @@ class TitleViewSet(
     """Вьюсет для произведений."""
 
     queryset = Title.objects.select_related(
-        'category').prefetch_related('genre').annotate(rating=Avg(
-            'reviews__score')).order_by('id')
+        'category'
+    ).prefetch_related(
+        'genre'
+    ).annotate(
+        rating=Avg('reviews__score')
+    ).order_by('name')
+
     permission_classes = [AdminOrReadOnly]
     filter_backends = [DjangoFilterBackend]
     filterset_class = TitleFilter
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_serializer_class(self):
         if self.request.method in SAFE_METHODS:
             return TitleReadSerializer
         return TitleWriteSerializer
-
-    def update(self, request, *args, **kwargs):
-        if request.method == 'PUT':
-            return self.http_method_not_allowed(request, *args, **kwargs)
-        return super().update(request, *args, **kwargs)
 
 
 class CommentViewSet(ModelViewSet):
