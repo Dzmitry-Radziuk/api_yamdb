@@ -17,7 +17,7 @@ class Command(BaseCommand):
     def load_csv(self, model, file_name, field_mapping=None):
         file_path = os.path.join(DATA_DIR, file_name)
         if not os.path.exists(file_path):
-            self.stdout.write(self.style.ERROR(f"Файл {file_name} не найден!"))
+            self.stdout.write(self.style.ERROR(f'Файл {file_name} не найден!'))
             return
 
         with open(file_path, encoding='utf-8') as file:
@@ -42,7 +42,7 @@ class Command(BaseCommand):
                 objects.append(model(**row))
             model.objects.bulk_create(objects, ignore_conflicts=True)
             self.stdout.write(self.style.SUCCESS(
-                f"Успешно загружено {len(objects)} записей в {model.__name__}"
+                f'Успешно загружено {len(objects)} записей в {model.__name__}'
             ))
 
     def handle(self, *args, **kwargs):

@@ -3,8 +3,7 @@ from django.db import models
 from django.utils.text import Truncator
 
 from api.common import constants
-from api.common.validators import (username_validator,
-                                   validate_forbidden_username)
+from users.validators import username_validator, validate_forbidden_username
 
 
 class User(AbstractUser):

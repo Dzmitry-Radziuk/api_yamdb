@@ -2,7 +2,7 @@ from django.db import models
 from django.utils.text import Truncator
 
 from api.common.constants import MAX_LENGTH_NAME, MAX_LENGTH_STR
-from api.common.validators import validate_year
+from titles.validators import validate_year
 
 
 class NameSlugModel(models.Model):
