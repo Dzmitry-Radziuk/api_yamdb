@@ -1,214 +1,237 @@
-# YaMDb API  
+# 🎬 YaMDb API
 
-Проект **YaMDb** собирает отзывы пользователей о различных произведениях (фильмах, книгах, песнях и т. д.).  
-API реализовано с использованием Django и Django REST framework, а аутентификация – через JWT.  
+**YaMDb API** — это проект для сбора пользовательских отзывов о различных произведениях: фильмах, книгах, музыке и др.  
+Реализован на базе **Django** и **Django REST Framework**, с использованием **JWT-аутентификации**.
 
-## Структура проекта  
+---
 
+## 📂 Структура проекта
+
+```
 api_yamdb/
-├── api/               # Основное приложение API
-│   ├── common/        # Утилиты и валидаторы
-│   ├── admin.py       # Настройки админки
-│   ├── apps.py        # Конфигурация приложения
-│   ├── exceptions.py  # Обработчики исключений
-│   ├── paginations.py # Настройки пагинации
-│   ├── permissions.py # Настройки прав доступа
-│   ├── serializers.py # Сериализаторы API
-│   ├── urls.py        # Маршрутизация API
-│   ├── views.py       # Контроллеры API
-│   ├── __init__.py
-│   └── ...
-│
-├── api_yamdb/         # Основные настройки Django-проекта
-│   ├── settings.py    # Конфигурация проекта
-│   ├── urls.py        # Главные маршруты проекта
-│   ├── wsgi.py        # Точка входа для WSGI
-│   ├── asgi.py        # Точка входа для ASGI
-│   ├── __init__.py
-│   └── ...
-│
-├── reviews/           # Приложение для отзывов и комментариев
-│   ├── models.py      # Модели отзывов и комментариев
-│   ├── urls.py        # Маршруты приложения
+├── api/                  # Основное приложение API
+│   ├── common/           # Утилиты и валидаторы
+│   ├── admin.py
 │   ├── apps.py
-│   ├── __init__.py
+│   ├── exceptions.py
+│   ├── paginations.py
+│   ├── permissions.py
+│   ├── serializers.py
+│   ├── urls.py
+│   ├── views.py
 │   └── ...
 │
-├── titles/            # Приложение для произведений
-│   ├── management/    # Команда для загрузки данных из CSV
-│   │   ├── commands/
-│   │   │   ├── load_csv_data.py # Скрипт загрузки данных
-│   │   │   ├── __init.py__
-│   │   └── ...
-│   ├── models.py      # Модели произведений
-│   ├── apps.py
-│   ├── __init__.py
+├── api_yamdb/            # Настройки Django
+│   ├── settings.py
+│   ├── urls.py
+│   ├── wsgi.py
+│   ├── asgi.py
 │   └── ...
 │
-├── users/             # Приложение для пользователей
-│   ├── models.py      # Модель пользователя
-│   ├── apps.py
-│   ├── __init__.py
-│   └── ...
+├── reviews/              # Отзывы и комментарии
+├── titles/               # Произведения
+│   └── management/commands/load_csv_data.py
+├── users/                # Пользователи
 │
-├── static/            # Статические файлы и данные
-│   ├── data/          # CSV-файлы для загрузки
-│   ├── redoc.yaml     # Документация API
-│   └── ...
+├── static/data/          # CSV-данные
+├── templates/            # HTML-шаблоны
 │
-├── templates/         # HTML-шаблоны
-│   ├── redoc.html     # Документация в формате ReDoc
-│   └── ...
-│
-├── manage.py          # Главный скрипт управления Django
-├── .env               # Файл с переменными окружения
-├── db.sqlite3         # Локальная база данных SQLite
-└── requirements.txt   # Зависимости проекта
+├── manage.py
+├── .env
+├── db.sqlite3
+└── requirements.txt
+```
 
-## Установка  
-  
-```sh
-Клонируйте репозиторий:
-git clone https://github.com/Dzmitry-Radziuk/api_yamdb  
-cd api_yamdb  
-Создайте и активируйте виртуальное окружение:
-python -m venv venv  
-# Windows:  
-venv\Scripts\activate  
-# Linux/macOS:  
-source venv/bin/activate  
-Установите зависимости:
-pip install -r requirements.txt  
-Примените миграции:
-python manage.py makemigrations  
-python manage.py migrate  
-Создайте суперпользователя (опционально):
-python manage.py createsuperuser  
-Загрузка данных из CSV
-Для массового импорта данных из CSV-файлов используется команда load_csv_data. CSV-файлы должны находиться в папке static/data/.
-python manage.py load_csv_data  
-После выполнения команды появится сообщение об успешной загрузке данных.
+---
 
-Запуск сервера
-python manage.py runserver  
-Сервер будет доступен по адресу: http://127.0.0.1:8000/
+## 🚀 Установка и запуск
 
-API Эндпоинты
-Аутентификация:
-POST /api/v1/auth/signup/  
-Описание: Регистрация пользователя (отправка email и username).
+### 1. Клонирование репозитория
+```bash
+git clone https://github.com/Dzmitry-Radziuk/api_yamdb
+cd api_yamdb
+```
 
-POST /api/v1/auth/token/  
-Описание: Получение JWT-токена (по username и confirmation_code).
+### 2. Виртуальное окружение
+```bash
+python -m venv venv
+```
 
-Категории:
-http
-GET /api/v1/categories/  
-Описание: Получение списка категорий (без токена).
+**Активация:**
+- Windows:
+```bash
+venv\Scripts\activate
+```
+- Linux / macOS:
+```bash
+source venv/bin/activate
+```
 
-POST /api/v1/categories/  
-Описание: Создание категории (только для администраторов).
+### 3. Установка зависимостей
+```bash
+pip install -r requirements.txt
+```
 
-Произведения:
-http
-GET /api/v1/titles/  
-Описание: Получение списка произведений (без токена), поддерживается фильтрация по category__slug, genre__slug, name и year.
+### 4. Миграции
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
 
-POST /api/v1/titles/  
-Описание: Добавление произведения (только для администраторов). При добавлении нельзя указывать год выпуска больше текущего.
+### 5. Создание суперпользователя (опционально)
+```bash
+python manage.py createsuperuser
+```
 
-Отзывы и комментарии:
-GET /api/v1/titles/{title_id}/reviews/  
-Описание: Получение отзывов для произведения (без токена).
+---
 
-POST /api/v1/titles/{title_id}/reviews/  
-Описание: Создание отзыва (только для аутентифицированных пользователей, один отзыв на произведение).
+## 📥 Загрузка данных
 
-GET /api/v1/titles/{title_id}/reviews/{review_id}/comments/  
-Описание: Получение комментариев к отзыву (без токена).
+Импорт CSV-файлов:
 
-POST /api/v1/titles/{title_id}/reviews/{review_id}/comments/  
-Описание: Создание комментария (только для аутентифицированных пользователей).
+```bash
+python manage.py load_csv_data
+```
 
-Полное описание API можно найти в redoc.yaml.
+Файлы должны находиться в папке:
+```
+static/data/
+```
 
-Примеры запросов и ответов
-1. Регистрация пользователя
-Запрос:
-http
+---
+
+## ▶️ Запуск сервера
+
+```bash
+python manage.py runserver
+```
+
+📍 Адрес:
+```
+http://127.0.0.1:8000/
+```
+
+---
+
+## 🔐 Аутентификация
+
+### Регистрация
+```http
 POST /api/v1/auth/signup/
-json
-{
-  "username": "new_user",
-  "email": "new_user@example.com"
-}
-Ответ:
-json
-{
-  "username": "new_user",
-  "email": "new_user@example.com"
-}
+```
 
-2. Получение списка категорий
-Запрос:
-http
-GET /api/v1/categories/
-Ответ:
-json
+### Получение токена
+```http
+POST /api/v1/auth/token/
+```
+
+---
+
+## 📚 Основные эндпоинты
+
+### Категории
+- `GET /api/v1/categories/` — список категорий
+- `POST /api/v1/categories/` — создание (admin)
+
+### Произведения
+- `GET /api/v1/titles/` — список
+- `POST /api/v1/titles/` — создание (admin)
+
+Фильтрация:
+- `category__slug`
+- `genre__slug`
+- `name`
+- `year`
+
+### Отзывы
+- `GET /api/v1/titles/{title_id}/reviews/`
+- `POST /api/v1/titles/{title_id}/reviews/`
+
+### Комментарии
+- `GET /api/v1/titles/{title_id}/reviews/{review_id}/comments/`
+- `POST /api/v1/titles/{title_id}/reviews/{review_id}/comments/`
+
+---
+
+## 🧪 Примеры
+
+### Регистрация
+```json
+{
+  "username": "new_user",
+  "email": "new_user@example.com"
+}
+```
+
+### Категории
+```json
 [
   {
     "name": "Фильмы",
     "slug": "movies"
-  },
-  {
-    "name": "Книги",
-    "slug": "books"
   }
 ]
+```
 
-3. Создание произведения
-Запрос:
-POST /api/v1/titles/
-json
+### Создание произведения
+```json
 {
   "name": "Интерстеллар",
   "year": 2014,
   "category": "movies",
   "genre": ["sci-fi"],
-  "description": "Фантастический фильм о космосе."
+  "description": "Фантастический фильм"
 }
-Ответ:
-json
-{
-  "id": 1,
-  "name": "Интерстеллар",
-  "year": 2014,
-  "category": "movies",
-  "genre": ["sci-fi"],
-  "description": "Фантастический фильм о космосе."
-}
+```
 
-Админка
-Админ-панель доступна по адресу /admin/.
-В админке зарегистрированы модели:
-User (пользователи)
-Category, Genre, Title (произведения)
-Review, Comment (отзывы и комментарии)
+---
 
-Тестирование
-Для запуска тестов используйте команду:
+## ⚙️ Админ-панель
+
+Доступ:
+```
+/admin/
+```
+
+Модели:
+- Users
+- Category / Genre / Title
+- Review / Comment
+
+---
+
+## 🧪 Тестирование
+
+```bash
 python manage.py test
+```
 
-Зависимости
-Проект использует:
-Django
-Django REST framework
-django-filter
-djangorestframework-simplejwt
-и другие...
-Зависимости указаны в requirements.txt
+---
 
-Над проектом работали:
-Дмитрий Радюк - https://github.com/Dzmitry-Radziuk 
-Александр Лавер - https://github.com/XanterXAlexandr 
-Михаил Яковенко - https://github.com/MikhailYakovenko
+## 📦 Зависимости
+
+- Django
+- Django REST Framework
+- django-filter
+- djangorestframework-simplejwt
+
+Полный список — в `requirements.txt`
+
+---
+
+## 👥 Авторы
+
+- Дмитрий Радюк — https://github.com/Dzmitry-Radziuk  
+- Александр Лавер — https://github.com/XanterXAlexandr  
+- Михаил Яковенко — https://github.com/MikhailYakovenko  
+
+---
+
+## 📄 Документация
+
+- `redoc.yaml`
+- `/redoc/` в браузере
+
+---
+
+⭐ Проект учебный, но может служить хорошей основой для production API.
